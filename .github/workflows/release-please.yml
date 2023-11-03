@@ -24,20 +24,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
+          cache: poetry 
 
       - name: Install poetry
         run: pipx install poetry
 
       - name: Determine dependencies
         run: poetry lock
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.9"
-          cache: poetry
 
       - name: Install Dependencies using Poetry
         run: |
