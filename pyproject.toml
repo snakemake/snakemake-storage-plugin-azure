@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "snakemake-storage-plugin-az"
+version = "0.1.0"
+description = ""
+authors = ["jakevc <jake.vancampen7@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+snakemake-interface-common = "^1.14.2"
+snakemake-interface-storage-plugins = "^1.2.3"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.10.1"
+flake8 = "^6.1.0"
+coverage = "^7.3.2"
+pytest = "^7.4.3"
+snakemake = "^7.32.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
