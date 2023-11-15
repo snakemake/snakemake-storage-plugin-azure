@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from azure.storage.blob import BlobServiceClient
 from typing import Any, Iterable, Optional
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
 from snakemake_interface_storage_plugins.storage_provider import (
@@ -26,10 +27,10 @@ from snakemake_interface_storage_plugins.io import IOCacheStorageInterface
 # settings.
 @dataclass
 class StorageProviderSettings(StorageProviderSettingsBase):
-    myparam: Optional[int] = field(
+    endpoint_url: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Some help text",
+            "help": "Azure Blob Storage Account endpoint url",
             # Optionally request that setting is also available for specification
             # via an environment variable. The variable will be named automatically as
             # SNAKEMAKE_<storage-plugin-name>_<param-name>, all upper case.
@@ -49,6 +50,20 @@ class StorageProviderSettings(StorageProviderSettingsBase):
             "required": True,
         },
     )
+    access_key: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Azure Blob Storage Account Access Key Credential",
+            "env_var": False,
+        },
+    )
+    sas_token: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Azure Blob Storage Account SAS Token Credential",
+            "env_var": False,
+        },
+    )
 
 
 # Required:
@@ -59,13 +74,15 @@ class StorageProviderSettings(StorageProviderSettingsBase):
 class StorageProvider(StorageProviderBase):
     # For compatibility with future changes, you should not overwrite the __init__
     # method. Instead, use __post_init__ to set additional attributes and initialize
-    # futher stuff.
+    # further stuff.
 
     def __post_init__(self):
         # This is optional and can be removed if not needed.
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
-        pass
+        self.blob_service_client = BlobServiceClient(
+            self.settings.endpoint_url, credential=self.settings.credential
+        )
 
     @classmethod
     def is_valid_query(cls, query: str) -> StorageQueryValidationResult:
@@ -91,7 +108,7 @@ class StorageProvider(StorageProviderBase):
 class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     # For compatibility with future changes, you should not overwrite the __init__
     # method. Instead, use __post_init__ to set additional attributes and initialize
-    # futher stuff.
+    # further stuff.
 
     def __post_init__(self):
         # This is optional and can be removed if not needed.

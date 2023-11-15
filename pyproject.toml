@@ -9,6 +9,8 @@ readme = "README.md"
 python = "^3.11"
 snakemake-interface-common = "^1.14.2"
 snakemake-interface-storage-plugins = "^1.2.3"
+azure-storage-blob = "^12.19.0"
+azure-core = "^1.29.5"
 
 
 [tool.poetry.group.dev.dependencies]
