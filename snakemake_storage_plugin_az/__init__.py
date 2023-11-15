@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import re
 from azure.storage.blob import BlobServiceClient
 from typing import Any, Iterable, Optional
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
@@ -13,6 +14,23 @@ from snakemake_interface_storage_plugins.storage_object import (
     retry_decorator,
 )
 from snakemake_interface_storage_plugins.io import IOCacheStorageInterface
+
+
+def is_valid_azure_storage_blob_endpoint(endpoint_url: str) -> bool:
+    """
+    Validates if the blob account endpoint is a valid Azure Storage Account URL.
+
+    Args:
+    blob_account_url (str): The name of the environment variable.
+
+    Returns:
+    bool: True if the environment variable is a valid Azure Storage Account URL.
+    """
+    url_pattern = re.compile(
+        r"^https:\/\/[a-z0-9]+(\.[a-z0-9]+)*\.blob\.core\.windows\.net\/?(.+)?$"
+    )
+
+    return bool(url_pattern.match(endpoint_url))
 
 
 # Optional:
@@ -53,7 +71,10 @@ class StorageProviderSettings(StorageProviderSettingsBase):
     access_key: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Azure Blob Storage Account Access Key Credential",
+            "help": (
+                "Azure Blob Storage Account Access Key Credential.",
+                "If set, takes precedence over sas_token credential.",
+            ),
             "env_var": False,
         },
     )
@@ -64,6 +85,18 @@ class StorageProviderSettings(StorageProviderSettingsBase):
             "env_var": False,
         },
     )
+
+    def __post_init__(self):
+        if not is_valid_azure_storage_blob_endpoint(self.endpoint_url):
+            raise ValueError(
+                f"Invalid Azure Storage Blob Endpoint URL: {self.endpoint_url}"
+            )
+
+        self.credential = None
+        if self.access_key:
+            self.credential = self.access_key
+        elif self.sas_token:
+            self.credential = self.sas_token
 
 
 # Required:

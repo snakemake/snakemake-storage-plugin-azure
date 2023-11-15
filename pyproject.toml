@@ -11,6 +11,7 @@ snakemake-interface-common = "^1.14.2"
 snakemake-interface-storage-plugins = "^1.2.3"
 azure-storage-blob = "^12.19.0"
 azure-core = "^1.29.5"
+azure-identity = "^1.15.0"
 
 
 [tool.poetry.group.dev.dependencies]
