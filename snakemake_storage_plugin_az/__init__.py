@@ -150,7 +150,8 @@ class StorageProvider(StorageProviderBase):
         """
 
         # parse container name from query
-        container_name = query.split("/")[0]
+        parsed = urlparse(query)
+        container_name = parsed.netloc
         cc = self.blob_service_client.get_container_client(container_name)
         return cc.list_blob_names()
 
