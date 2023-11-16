@@ -153,7 +153,7 @@ class StorageProvider(StorageProviderBase):
         parsed = urlparse(query)
         container_name = parsed.netloc
         cc = self.blob_service_client.get_container_client(container_name)
-        return cc.list_blob_names()
+        return [o for o in cc.list_blob_names()]
 
 
 # Required:
@@ -170,7 +170,10 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # This is optional and can be removed if not needed.
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
-        pass
+        if self.is_valid_query():
+            parsed = urlparse(self.query)
+            self.container_name = parsed.netloc
+            self.path = parsed.path.lstrip("/")
 
     async def inventory(self, cache: IOCacheStorageInterface):
         """From this file, try to find as much existence and modification date
