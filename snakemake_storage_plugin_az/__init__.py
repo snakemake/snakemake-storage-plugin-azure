@@ -16,15 +16,15 @@ from snakemake_interface_storage_plugins.storage_object import (
 from snakemake_interface_storage_plugins.io import IOCacheStorageInterface
 
 
-def is_valid_azure_storage_blob_endpoint(endpoint_url: str) -> bool:
+def is_valid_azure_blob_endpoint(endpoint_url: str) -> bool:
     """
-    Validates if the blob account endpoint is a valid Azure Storage Account URL.
+    Validates the Azure Blob endpoint pattern.
 
     Args:
-    blob_account_url (str): The name of the environment variable.
+    endpoint_url (str): The name of the Azure Blob Storage Account endpoint
 
     Returns:
-    bool: True if the environment variable is a valid Azure Storage Account URL.
+    bool: True if the endpoint_url is a valid Azure Blob endpoint.
     """
     url_pattern = re.compile(
         r"^https:\/\/[a-z0-9]+(\.[a-z0-9]+)*\.blob\.core\.windows\.net\/?(.+)?$"
