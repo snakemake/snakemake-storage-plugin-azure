@@ -193,7 +193,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     def local_suffix(self) -> str:
         """Return a unique suffix for the local path, determined from self.query."""
-        ...
+        return f"{self.container_name}/{self.path}"
 
     def close(self):
         # Close any open connections, unmount stuff, etc.
