@@ -24,7 +24,8 @@ class TestStorageNoSettings(TestStorageBase):
 
     def get_storage_provider_settings(self) -> Optional[StorageProviderSettingsBase]:
         # instantiate StorageProviderSettings of this plugin as appropriate
-        # public dataset storage account and public sas token
+        # public dataset storage account and public sas token:
+        # https://learn.microsoft.com/en-us/azure/open-datasets/dataset-genomics-data-lake
         ep = "https://datasetreferencegenomes.blob.core.windows.net/dataset"
         sas = (
             "sv=2019-02-02&se=2050-01-01T08%3A00%3A00Z&",
