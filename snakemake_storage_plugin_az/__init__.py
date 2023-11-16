@@ -242,3 +242,13 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # This is used by glob_wildcards() to find matches for wildcards in the query.
         # The method has to return concretized queries without any remaining wildcards.
         ...
+
+    def container_exists(self) -> bool:
+        """Returns True if container exists, False otherwise."""
+        try:
+            container_name = urlparse(self.query).netloc
+            return self.provider.blob_service_client.get_container_client(
+                container_name
+            )
+        except Exception:
+            return False
