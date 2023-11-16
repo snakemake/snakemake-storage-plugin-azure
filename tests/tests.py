@@ -10,12 +10,12 @@ class TestStorageNoSettings(TestStorageBase):
     __test__ = True
     retrieve_only = True
 
-    def get_query_not_existing(self) -> str:
+    def get_query_not_existing(self, tmp_path) -> str:
         container = uuid.uuid4().hex
         path = uuid.uuid4().hex
         return f"az://{container}/{path}"
 
-    def get_query(self) -> str:
+    def get_query(self, tmp_path) -> str:
         return "az://container/path/test.txt"
 
     def get_storage_provider_cls(self) -> Type[StorageProviderBase]:
