@@ -130,7 +130,11 @@ class StorageProvider(StorageProviderBase):
 
         This is optional and can raise a NotImplementedError() instead.
         """
-        ...
+
+        # parse container name from query
+        container_name = query.split("/")[0]
+        cc = self.blob_service_client.get_container_client(container_name)
+        return cc.list_blob_names()
 
 
 # Required:
