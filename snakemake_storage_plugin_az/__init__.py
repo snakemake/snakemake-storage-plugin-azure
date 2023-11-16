@@ -205,7 +205,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     @retry_decorator
     def exists(self) -> bool:
         # return True if the object exists
-        ...
+        return self.provider.blob_service_client.get_blob_client(self.path).exists()
 
     @retry_decorator
     def mtime(self) -> float:
