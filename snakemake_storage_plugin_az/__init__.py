@@ -87,7 +87,7 @@ class StorageProviderSettings(StorageProviderSettingsBase):
     )
 
     def __post_init__(self):
-        if not is_valid_azure_storage_blob_endpoint(self.endpoint_url):
+        if not is_valid_azure_blob_endpoint(self.endpoint_url):
             raise ValueError(
                 f"Invalid Azure Storage Blob Endpoint URL: {self.endpoint_url}"
             )
