@@ -26,5 +26,8 @@ class TestStorageNoSettings(TestStorageBase):
         # instantiate StorageProviderSettings of this plugin as appropriate
         # public dataset storage account and public sas token
         ep = "https://datasetreferencegenomes.blob.core.windows.net/dataset"
-        sas = "sv=2019-02-02&se=2050-01-01T08%3A00%3A00Z&si=prod&sr=c&sig=JtQoPFqiC24GiEB7v9zHLi4RrA2Kd1r%2F3iFt2l9%2FlV8%3D"
+        sas = (
+            "sv=2019-02-02&se=2050-01-01T08%3A00%3A00Z&",
+            "si=prod&sr=c&sig=JtQoPFqiC24GiEB7v9zHLi4RrA2Kd1r%2F3iFt2l9%2FlV8%3D",
+        )
         return StorageProviderSettings(endpoint_url=ep, sas_token=sas)
