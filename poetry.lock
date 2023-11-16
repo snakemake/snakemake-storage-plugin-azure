@@ -1401,13 +1401,13 @@ ConfigArgParse = ">=1.7,<2.0"
 
 [[package]]
 name = "snakemake-interface-storage-plugins"
-version = "1.2.3"
+version = "1.3.1"
 description = "This package provides a stable interface for interactions between Snakemake and its storage plugins."
 optional = false
 python-versions = ">=3.11,<4.0"
 files = [
-    {file = "snakemake_interface_storage_plugins-1.2.3-py3-none-any.whl", hash = "sha256:2c9287a2c4a950f81ec832b5749c103fb5cbb9e6eabe120c7e675114a23a20f2"},
-    {file = "snakemake_interface_storage_plugins-1.2.3.tar.gz", hash = "sha256:373ea2b22db2840fecb509818c4f0e862ef7c0412264f70dc720b2cf984671ef"},
+    {file = "snakemake_interface_storage_plugins-1.3.1-py3-none-any.whl", hash = "sha256:57c07e3ab56124a2795d33461e170f1a38caaea54fd451e1be5ad5e0c6ecd51c"},
+    {file = "snakemake_interface_storage_plugins-1.3.1.tar.gz", hash = "sha256:bf117e5955ba633f4d739fc8b4a7e6a4ae77d956d8550d3c3763c9bd9af9612d"},
 ]
 
 [package.dependencies]
