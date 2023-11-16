@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import re
+from urllib.parse import urlparse
 from azure.storage.blob import BlobServiceClient
 from typing import Any, Iterable, Optional
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
@@ -123,7 +124,24 @@ class StorageProvider(StorageProviderBase):
         # Ensure that also queries containing wildcards (e.g. {sample}) are accepted
         # and considered valid. The wildcards will be resolved before the storage
         # object is actually used.
-        ...
+        try:
+            parsed = urlparse(query)
+        except Exception as e:
+            return StorageQueryValidationResult(
+                query=query,
+                valid=False,
+                reason=f"cannot be parsed as URL ({e})",
+            )
+        if parsed.scheme != "az":
+            return StorageQueryValidationResult(
+                query=query,
+                valid=False,
+                reason="must start with az (az://...)",
+            )
+        return StorageQueryValidationResult(
+            query=query,
+            valid=True,
+        )
 
     def list_objects(self, query: Any) -> Iterable[str]:
         """Return an iterator over all objects in the storage that match the query.
