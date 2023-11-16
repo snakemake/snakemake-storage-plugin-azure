@@ -189,7 +189,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def get_inventory_parent(self) -> Optional[str]:
         """Return the parent directory of this object."""
         # this is optional and can be left as is
-        return None
+        return self.cache_key(self.container_name)
 
     def local_suffix(self) -> str:
         """Return a unique suffix for the local path, determined from self.query."""
