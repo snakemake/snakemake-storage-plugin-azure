@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import re
 from urllib.parse import urlparse
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, ContainerClient, BlobClient
 from typing import Any, Iterable, Optional
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
 from snakemake_interface_storage_plugins.storage_provider import (
@@ -114,7 +114,7 @@ class StorageProvider(StorageProviderBase):
         # This is optional and can be removed if not needed.
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
-        self.blob_service_client = BlobServiceClient(
+        self.bsc = BlobServiceClient(
             self.settings.endpoint_url, credential=self.settings.credential
         )
 
@@ -152,7 +152,7 @@ class StorageProvider(StorageProviderBase):
         # parse container name from query
         parsed = urlparse(query)
         container_name = parsed.netloc
-        cc = self.blob_service_client.get_container_client(container_name)
+        cc = self.bsc.get_container_client(container_name)
         return [o for o in cc.list_blob_names()]
 
 
@@ -174,6 +174,14 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             parsed = urlparse(self.query)
             self.container_name = parsed.netloc
             self.path = parsed.path.lstrip("/")
+
+            # container client
+            self.cc: ContainerClient = self.provider.bsc.get_container_client(
+                self.container_name
+            )
+
+            # blob client
+            self.bc: BlobClient = self.cc.get_blob_client(self.path)
 
     async def inventory(self, cache: IOCacheStorageInterface):
         """From this file, try to find as much existence and modification date
@@ -205,17 +213,17 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     @retry_decorator
     def exists(self) -> bool:
         # return True if the object exists
-        return self.provider.blob_service_client.get_blob_client(self.path).exists()
+        return self.bc.exists()
 
     @retry_decorator
     def mtime(self) -> float:
         # return the modification time
-        ...
+        return self.bc.get_blob_properties().last_modified.timestamp()
 
     @retry_decorator
     def size(self) -> int:
         # return the size in bytes
-        ...
+        return self.bc.get_blob_properties().size
 
     @retry_decorator
     def retrieve_object(self):
@@ -250,8 +258,6 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         """Returns True if container exists, False otherwise."""
         try:
             container_name = urlparse(self.query).netloc
-            return self.provider.blob_service_client.get_container_client(
-                container_name
-            )
+            return self.provider.bsc.get_container_client(container_name)
         except Exception:
             return False
