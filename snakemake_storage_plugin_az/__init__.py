@@ -7,7 +7,9 @@ from snakemake_interface_storage_plugins.settings import StorageProviderSettings
 from snakemake_interface_storage_plugins.storage_provider import (
     StorageProviderBase,
     StorageQueryValidationResult,
+    ExampleQuery,
 )
+from snakemake_interface_storage_plugins.common import Operation
 from snakemake_interface_storage_plugins.storage_object import (
     StorageObjectRead,
     StorageObjectWrite,
@@ -118,6 +120,32 @@ class StorageProvider(StorageProviderBase):
             self.settings.endpoint_url, credential=self.settings.credential
         )
 
+    def use_rate_limiter(self) -> bool:
+        """Return False if no rate limiting is needed for this provider."""
+        return False
+
+    def default_max_requests_per_second(self) -> float:
+        """Return the default maximum number of requests per second for this storage
+        provider."""
+        ...
+
+    def rate_limiter_key(self, query: str, operation: Operation):
+        """Return a key for identifying a rate limiter given a query and an operation.
+
+        This is used to identify a rate limiter for the query.
+        E.g. for a storage provider like http that would be the host name.
+        For s3 it might be just the endpoint URL.
+        """
+        ...
+
+    @classmethod
+    def example_query(cls) -> ExampleQuery:
+        """Return an example query with description for this storage provider."""
+        return ExampleQuery(
+            query="az://container/path/example/file.txt",
+            description="A file in an Azure Blob Storage Container",
+        )
+
     @classmethod
     def is_valid_query(cls, query: str) -> StorageQueryValidationResult:
         """Return whether the given query is valid for this storage provider."""
@@ -203,9 +231,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         """Return a unique suffix for the local path, determined from self.query."""
         return f"{self.container_name}/{self.path}"
 
-    def close(self):
+    def cleanup(self):
         # Close any open connections, unmount stuff, etc.
-        ...
+        pass
 
     # Fallible methods should implement some retry logic.
     # The easiest way to do this (but not the only one) is to use the retry_decorator

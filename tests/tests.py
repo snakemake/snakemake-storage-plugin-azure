@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, Type
+from typing import List, Optional, Type
 from snakemake_interface_storage_plugins.tests import TestStorageBase
 from snakemake_interface_storage_plugins.storage_provider import StorageProviderBase
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
@@ -20,7 +20,7 @@ class TestStorageNoSettings(TestStorageBase):
 
     def get_storage_provider_cls(self) -> Type[StorageProviderBase]:
         # Return the StorageProvider class of this plugin
-        StorageProvider
+        return StorageProvider
 
     def get_storage_provider_settings(self) -> Optional[StorageProviderSettingsBase]:
         # instantiate StorageProviderSettings of this plugin as appropriate
@@ -28,7 +28,10 @@ class TestStorageNoSettings(TestStorageBase):
         # https://learn.microsoft.com/en-us/azure/open-datasets/dataset-genomics-data-lake
         ep = "https://datasetreferencegenomes.blob.core.windows.net/dataset"
         sas = (
-            "sv=2019-02-02&se=2050-01-01T08%3A00%3A00Z&",
-            "si=prod&sr=c&sig=JtQoPFqiC24GiEB7v9zHLi4RrA2Kd1r%2F3iFt2l9%2FlV8%3D",
+            "sv=2019-02-02&se=2050-01-01T08%3A00%3A00Z&"
+            "si=prod&sr=c&sig=JtQoPFqiC24GiEB7v9zHLi4RrA2Kd1r%2F3iFt2l9%2FlV8%3D"
         )
         return StorageProviderSettings(endpoint_url=ep, sas_token=sas)
+
+    def get_example_args(self) -> List[str]:
+        return []
