@@ -1386,13 +1386,13 @@ reports = ["pygments"]
 
 [[package]]
 name = "snakemake-interface-common"
-version = "1.14.2"
+version = "1.14.3"
 description = "Common functions and classes for Snakemake and its plugins"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "snakemake_interface_common-1.14.2-py3-none-any.whl", hash = "sha256:31b8542f313602d26a22a379888c9ecde595d887708e9c27a414525051ba4ebf"},
-    {file = "snakemake_interface_common-1.14.2.tar.gz", hash = "sha256:377aa7760220f92deade72473cd9409b8715eaa2cd6f76b1965e035a5556ffe2"},
+    {file = "snakemake_interface_common-1.14.3-py3-none-any.whl", hash = "sha256:8188aec5d92fc3fcfc5d7e7e12d383c98f721c4273a8230e5fddec4020d7ee3d"},
+    {file = "snakemake_interface_common-1.14.3.tar.gz", hash = "sha256:1ea9486d26841c169a85d9955ff9e8a3b720d9d64fda357d70e87b3cd70eeeee"},
 ]
 
 [package.dependencies]
@@ -1611,4 +1611,4 @@ pyyaml = ">=6.0,<7.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "0f9d6f1ce307fb63620d0a019751fe5d71b12edcce1dbbb7586779ca10d18868"
+content-hash = "dbb9d1615acbd416b520667f5dd42f112e0daf7ebbd9bd0305ba311e2059858a"
