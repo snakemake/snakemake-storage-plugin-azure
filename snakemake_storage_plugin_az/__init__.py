@@ -408,8 +408,13 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         dependency that one must provide a credential with container create permissions.
         """
 
-        if not self.container_exists():
-            self.container().create_container(self.container_name)
+        try:
+            if not self.container_exists():
+                self.container().create_container(self.container_name)
+        # pass on container exists exception
+        except Exception as e:
+            if e.status_code == 403:
+                pass
 
         # Ensure that the object is stored at the location specified by
         # self.local_path().
