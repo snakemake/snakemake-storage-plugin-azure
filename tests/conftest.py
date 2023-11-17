@@ -17,7 +17,7 @@ AZURITE_CONNECTION_STRING = (
     "DefaultEndpointsProtocol=http;"
     f"AccountName={AZURITE_STORAGE_ACCOUNT};"
     f"AccountKey={AZURITE_MOCK_KEY};"
-    f"BlobEndpoint=http://127.0.0.1:10000/{AZURITE_STORAGE_ACCOUNT};"
+    f"BlobEndpoint={AZURITE_MOCK_ENDPOINT};"
 )
 
 
