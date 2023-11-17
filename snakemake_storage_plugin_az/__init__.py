@@ -297,6 +297,8 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             ) = self.provider.parse_query_parts(self.query)
             self._local_suffix = self._local_suffix_from_key(self.blob_path)
 
+            # check the storage account parsed form the endpoint_url
+            # matches that parsed from the query
             if self.account_name != self.provider.settings.storage_account_name:
                 raise ValueError(
                     f"query account name: {self.account_name} must "
@@ -305,7 +307,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
                 )
 
     def container(self):
-        """Return initialized ContainerClient"""
+        """Return initialized ContainerClient."""
         try:
             cc: ContainerClient = self.provider.bsc.get_container_client(
                 self.container_name
@@ -318,7 +320,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         return cc
 
     def blob(self):
-        """Return initialized BlobClient"""
+        """Return initialized BlobClient."""
         try:
             bc: BlobClient = self.provider.bsc.get_container_client(
                 self.container_name
@@ -383,12 +385,12 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     @retry_decorator
     def mtime(self) -> float:
-        """Returns the modification time"""
+        """Returns the modification time."""
         return self.blob().get_blob_properties().last_modified.timestamp()
 
     @retry_decorator
     def size(self) -> int:
-        """Returns the size in bytes"""
+        """Returns the size in bytes."""
         return self.blob().get_blob_properties().size
 
     @retry_decorator
