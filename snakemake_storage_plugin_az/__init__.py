@@ -1,22 +1,26 @@
-from dataclasses import dataclass, field
 import re
-from urllib.parse import urlparse
-from azure.storage.blob import BlobServiceClient, ContainerClient, BlobClient
+from dataclasses import dataclass, field
+from pathlib import PosixPath
 from typing import Any, Iterable, Optional
-from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
-from snakemake_interface_storage_plugins.storage_provider import (
-    StorageProviderBase,
-    StorageQueryValidationResult,
-    ExampleQuery,
-)
+from urllib.parse import unquote, urlparse
+
+from azure.core.credentials import AzureSasCredential
+from azure.core.exceptions import HttpResponseError
+from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 from snakemake_interface_storage_plugins.common import Operation
+from snakemake_interface_storage_plugins.io import IOCacheStorageInterface
+from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
 from snakemake_interface_storage_plugins.storage_object import (
+    StorageObjectGlob,
     StorageObjectRead,
     StorageObjectWrite,
-    StorageObjectGlob,
     retry_decorator,
 )
-from snakemake_interface_storage_plugins.io import IOCacheStorageInterface
+from snakemake_interface_storage_plugins.storage_provider import (
+    ExampleQuery,
+    StorageProviderBase,
+    StorageQueryValidationResult,
+)
 
 
 def is_valid_azure_blob_endpoint(endpoint_url: str) -> bool:
@@ -32,8 +36,11 @@ def is_valid_azure_blob_endpoint(endpoint_url: str) -> bool:
     url_pattern = re.compile(
         r"^https:\/\/[a-z0-9]+(\.[a-z0-9]+)*\.blob\.core\.windows\.net\/?(.+)?$"
     )
+    mock_pattern = re.compile(r"^http://127\.0\.0\.1:10000/[a-zA-Z0-9]+$")
 
-    return bool(url_pattern.match(endpoint_url))
+    return bool(url_pattern.match(endpoint_url)) or bool(
+        mock_pattern.match(endpoint_url)
+    )
 
 
 # Optional:
@@ -89,17 +96,38 @@ class StorageProviderSettings(StorageProviderSettingsBase):
         },
     )
 
+    def endpoint_url_is_mock(self):
+        """Returns true if endpoint url is mock pattern"""
+        mock_pattern = re.compile(r"^http://127\.0\.0\.1:10000/[a-zA-Z0-9]+$")
+        return mock_pattern.match(self.endpoint_url)
+
+    def set_storage_account_name(self):
+        """Sets the storage account name"""
+        try:
+            if self.endpoint_url_is_mock:
+                parsed = urlparse(self.endpoint_url)
+                self.storage_account_name = parsed.path.lstrip("/")
+            else:
+                parsed = urlparse(self.endpoint_url)
+                account_name = parsed.netloc
+                if account_name != "":
+                    self.storage_account_name = account_name.split(".")[0]
+        except Exception as e:
+            raise ValueError(f"unable to set storage account name: {e}")
+
     def __post_init__(self):
         if not is_valid_azure_blob_endpoint(self.endpoint_url):
             raise ValueError(
-                f"Invalid Azure Storage Blob Endpoint URL: {self.endpoint_url}"
+                f"invalid Azure Storage Blob Endpoint URL: {self.endpoint_url}"
             )
+
+        self.set_storage_account_name()
 
         self.credential = None
         if self.access_key:
             self.credential = self.access_key
         elif self.sas_token:
-            self.credential = self.sas_token
+            self.credential = AzureSasCredential(self.sas_token)
 
 
 # Required:
@@ -142,8 +170,8 @@ class StorageProvider(StorageProviderBase):
     def example_query(cls) -> ExampleQuery:
         """Return an example query with description for this storage provider."""
         return ExampleQuery(
-            query="az://container/path/example/file.txt",
-            description="A file in an Azure Blob Storage Container",
+            query="az://account/container/path/example/file.txt",
+            description="A file in an Azure Blob Storage Account Container",
         )
 
     @classmethod
@@ -166,10 +194,40 @@ class StorageProvider(StorageProviderBase):
                 valid=False,
                 reason="must start with az (az://...)",
             )
+        if not parsed.netloc.isalnum:
+            return StorageQueryValidationResult(
+                query=query,
+                valid=False,
+                reason="azure storage account name must be strictly alphanumeric",
+            )
         return StorageQueryValidationResult(
             query=query,
             valid=True,
         )
+
+    def parse_query_parts(self, query: str) -> (str, str, Optional[str]):
+        """Parses query parts for the provider"""
+        try:
+            parsed = urlparse(query)
+            account = parsed.netloc
+
+            path_parts = PosixPath(unquote(parsed.path)).parts
+
+            container = ""
+            if len(path_parts) > 2:
+                container = path_parts[1]
+
+            bpath = "/".join(path_parts[2:])
+
+        except Exception as e:
+            raise ValueError(f"unable to parse query parts: {path_parts}, {e}")
+
+        return account, container, bpath
+
+    def get_container_name(self, query: str) -> str:
+        """Returns the container name from query."""
+        _, c, _ = self.parse_query_parts(query)
+        return c
 
     def list_objects(self, query: Any) -> Iterable[str]:
         """Return an iterator over all objects in the storage that match the query.
@@ -178,9 +236,7 @@ class StorageProvider(StorageProviderBase):
         """
 
         # parse container name from query
-        parsed = urlparse(query)
-        container_name = parsed.netloc
-        cc = self.bsc.get_container_client(container_name)
+        cc = self.bsc.get_container_client(self.get_container_name())
         return [o for o in cc.list_blob_names()]
 
 
@@ -199,17 +255,44 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
         if self.is_valid_query():
-            parsed = urlparse(self.query)
-            self.container_name = parsed.netloc
-            self.path = parsed.path.lstrip("/")
+            (
+                self.account_name,
+                self.container_name,
+                self.blob_path,
+            ) = self.provider.parse_query_parts(self.query)
+            self._local_suffix = self._local_suffix_from_key(self.blob_path)
 
-            # container client
-            self.cc: ContainerClient = self.provider.bsc.get_container_client(
+            if self.account_name != self.provider.settings.storage_account_name:
+                raise ValueError(
+                    f"query account name: {self.account_name} must "
+                    "match that from endpoint url: "
+                    f"{self.provider.settings.storage_account_name}"
+                )
+
+    def container(self):
+        # initialize container client
+        try:
+            cc: ContainerClient = self.provider.bsc.get_container_client(
                 self.container_name
             )
+        except Exception as e:
+            raise ConnectionError(
+                "failed to initialize ContainerClient for container:"
+                f" {self.container_name}: {e}"
+            )
+        return cc
 
-            # blob client
-            self.bc: BlobClient = self.cc.get_blob_client(self.path)
+    def blob(self):
+        # initialize blob
+        try:
+            bc: BlobClient = self.provider.bsc.get_container_client(
+                self.container_name
+            ).get_blob_client(self.blob_path)
+        except Exception as e:
+            raise ConnectionError(
+                f"failed to initialize BlobClient for blob:" f" {self.blob_path}: {e}"
+            )
+        return bc
 
     async def inventory(self, cache: IOCacheStorageInterface):
         """From this file, try to find as much existence and modification date
@@ -220,7 +303,21 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
         # If this is implemented in a storage object, results have to be stored in
         # the given IOCache object.
-        pass
+
+        if self.get_inventory_parent():
+            # found
+            return
+
+        # bucket exists
+        if not self.container_exists():
+            cache.exists_in_storage[self.cache_key] = False
+        else:
+            cache.exists_in_storage[self.cache_key] = True
+            for o in self.container().list_blobs():
+                key = self.cache_key(self._local_suffix_from_key(o.name))
+                cache.mtime[key] = o.last_modified.timestamp()
+                cache.size[key] = o.size
+                cache.exists_in_storage[key] = True
 
     def get_inventory_parent(self) -> Optional[str]:
         """Return the parent directory of this object."""
@@ -229,7 +326,10 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     def local_suffix(self) -> str:
         """Return a unique suffix for the local path, determined from self.query."""
-        return f"{self.container_name}/{self.path}"
+        return self._local_suffix
+
+    def _local_suffix_from_key(self, key: str) -> str:
+        return f"{self.container_name}/{key}"
 
     def cleanup(self):
         # Close any open connections, unmount stuff, etc.
@@ -241,17 +341,20 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     @retry_decorator
     def exists(self) -> bool:
         # return True if the object exists
-        return self.bc.exists()
+        if not self.container_exists():
+            return False
+        else:
+            return self.blob().exists()
 
     @retry_decorator
     def mtime(self) -> float:
         # return the modification time
-        return self.bc.get_blob_properties().last_modified.timestamp()
+        return self.blob().get_blob_properties().last_modified.timestamp()
 
     @retry_decorator
     def size(self) -> int:
         # return the size in bytes
-        return self.bc.get_blob_properties().size
+        return self.blob().get_blob_properties().size
 
     @retry_decorator
     def retrieve_object(self):
@@ -285,7 +388,14 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def container_exists(self) -> bool:
         """Returns True if container exists, False otherwise."""
         try:
-            container_name = urlparse(self.query).netloc
-            return self.provider.bsc.get_container_client(container_name)
-        except Exception:
-            return False
+            return self.container().exists()
+        except HttpResponseError as e:
+            if e.status_code == 403:
+                raise PermissionError(
+                    "the provided credential does not have permission to list "
+                    "containers on this storage account"
+                )
+            else:
+                raise e
+        except Exception as e:
+            raise e
