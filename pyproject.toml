@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "snakemake-storage-plugin-az"
 version = "0.1.0"
-description = ""
-authors = ["jakevc <jake.vancampen7@gmail.com>"]
+description = "A Snakemake storage plugin to read and write from Azure Blob Storage"
+authors = ["Jake VanCampen <jake.vancampen7@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]

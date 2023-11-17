@@ -25,13 +25,17 @@ from snakemake_interface_storage_plugins.storage_provider import (
 
 def is_valid_azure_blob_endpoint(endpoint_url: str) -> bool:
     """
-    Validates the Azure Blob endpoint pattern.
+    Validates the Azure Blob endpoint.
+
+    Returns True if endpoint_url matches the Azure Blob Storage
+    endpoint regex or if endpoint_url matches the local
+    azurite storage emulator endpoint used for testing.
 
     Args:
-    endpoint_url (str): The name of the Azure Blob Storage Account endpoint
+        endpoint_url (str): The name of the Azure Blob Storage Account endpoint
 
     Returns:
-    bool: True if the endpoint_url is a valid Azure Blob endpoint.
+        bool: True if the endpoint_url is a valid Azure Blob endpoint.
     """
     url_pattern = re.compile(
         r"^https:\/\/[a-z0-9]+(\.[a-z0-9]+)*\.blob\.core\.windows\.net\/?(.+)?$"
@@ -96,13 +100,26 @@ class StorageProviderSettings(StorageProviderSettingsBase):
         },
     )
 
-    def endpoint_url_is_mock(self):
-        """Returns true if endpoint url is mock pattern"""
+    def endpoint_url_is_mock(self) -> bool:
+        """
+        Returns true if endpoint url matches the mock pattern.
+
+        Returns:
+            bool: True if self.endpoint_url matches mock_pattern, False otherwise
+        """
         mock_pattern = re.compile(r"^http://127\.0\.0\.1:10000/[a-zA-Z0-9]+$")
         return mock_pattern.match(self.endpoint_url)
 
     def set_storage_account_name(self):
-        """Sets the storage account name"""
+        """
+        Sets the storage account name
+
+        Sets self.storage_account_name by parsing from the endpoint_url. If the endpoint
+        is the local emulator, the parsing is slightly different.
+
+        Raises:
+            ValueError: if urlparse fails to parse the endpoint_url or parse the path.
+        """
         try:
             if self.endpoint_url_is_mock:
                 parsed = urlparse(self.endpoint_url)
@@ -176,7 +193,16 @@ class StorageProvider(StorageProviderBase):
 
     @classmethod
     def is_valid_query(cls, query: str) -> StorageQueryValidationResult:
-        """Return whether the given query is valid for this storage provider."""
+        """
+        Return whether the given query is valid for this storage provider.
+
+        Args:
+            query (str): the storage query string.
+
+        Returns:
+            StoryQueryValidationResult: the query validation result describes if the
+                query is valid or not, and if not specifies the reason.
+        """
         # Ensure that also queries containing wildcards (e.g. {sample}) are accepted
         # and considered valid. The wildcards will be resolved before the storage
         # object is actually used.
@@ -206,7 +232,16 @@ class StorageProvider(StorageProviderBase):
         )
 
     def parse_query_parts(self, query: str) -> (str, str, Optional[str]):
-        """Parses query parts for the provider"""
+        """
+        Parses query parts for the provider.
+
+        Args:
+            query (str): the azure storage query string.
+
+        Returns:
+            (account: str, container: str, bpath: str): a tuple of the storage details
+            parsed from the query string.
+        """
         try:
             parsed = urlparse(query)
             account = parsed.netloc
@@ -225,7 +260,9 @@ class StorageProvider(StorageProviderBase):
         return account, container, bpath
 
     def get_container_name(self, query: str) -> str:
-        """Returns the container name from query."""
+        """
+        Returns the container name from query.
+        """
         _, c, _ = self.parse_query_parts(query)
         return c
 
@@ -234,8 +271,6 @@ class StorageProvider(StorageProviderBase):
 
         This is optional and can raise a NotImplementedError() instead.
         """
-
-        # parse container name from query
         cc = self.bsc.get_container_client(self.get_container_name())
         return [o for o in cc.list_blob_names()]
 
@@ -270,7 +305,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
                 )
 
     def container(self):
-        # initialize container client
+        """Return initialized ContainerClient"""
         try:
             cc: ContainerClient = self.provider.bsc.get_container_client(
                 self.container_name
@@ -283,7 +318,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         return cc
 
     def blob(self):
-        # initialize blob
+        """Return initialized BlobClient"""
         try:
             bc: BlobClient = self.provider.bsc.get_container_client(
                 self.container_name
@@ -340,7 +375,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     # provided by snakemake-interface-storage-plugins.
     @retry_decorator
     def exists(self) -> bool:
-        # return True if the object exists
+        """Return True if the object exists."""
         if not self.container_exists():
             return False
         else:
@@ -348,12 +383,12 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     @retry_decorator
     def mtime(self) -> float:
-        # return the modification time
+        """Returns the modification time"""
         return self.blob().get_blob_properties().last_modified.timestamp()
 
     @retry_decorator
     def size(self) -> int:
-        # return the size in bytes
+        """Returns the size in bytes"""
         return self.blob().get_blob_properties().size
 
     @retry_decorator
@@ -366,14 +401,31 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     @retry_decorator
     def store_object(self):
+        """
+        Stores the local object in cloud storage.
+
+        If the storage container does not exist, it is created. This check creates the
+        dependency that one must provide a credential with container create permissions.
+        """
+
+        if not self.container_exists():
+            self.container().create_container(self.container_name)
+
         # Ensure that the object is stored at the location specified by
         # self.local_path().
-        ...
+        if self.local_path().exists():
+            self.upload_blob_to_storage()
+
+    def upload_blob_to_storage(self):
+        """Uploads the blob to storage, opening a connection and streaming the bytes."""
+        with open(self.local_path, "rb") as data:
+            self.blob().upload_blob(data, overwrite=True)
 
     @retry_decorator
     def remove(self):
-        # Remove the object from the storage.
-        ...
+        """Removes the object from blob storage."""
+        if self.blob().exists():
+            self.blob().delete_blob()
 
     # The following to methods are only required if the class inherits from
     # StorageObjectGlob.
