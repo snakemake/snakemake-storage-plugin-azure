@@ -8,7 +8,7 @@ from azure.core.credentials import AzureSasCredential
 from azure.core.exceptions import HttpResponseError
 from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 from snakemake_interface_storage_plugins.common import Operation
-from snakemake_interface_storage_plugins.io import IOCacheStorageInterface
+from snakemake_interface_storage_plugins.io import IOCacheStorageInterface, Mtime
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
 from snakemake_interface_storage_plugins.storage_object import (
     StorageObjectGlob,
@@ -352,7 +352,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             cache.exists_in_storage[self.cache_key] = True
             for o in self.container().list_blobs():
                 key = self.cache_key(self._local_suffix_from_key(o.name))
-                cache.mtime[key] = o.last_modified.timestamp()
+                cache.mtime[key] = Mtime(storage=o.last_modified.timestamp())
                 cache.size[key] = o.size
                 cache.exists_in_storage[key] = True
 
