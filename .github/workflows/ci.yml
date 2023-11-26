@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "${{ env.PYTHON_VERSION }}"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install poetry
         run: pipx install poetry 
@@ -28,7 +28,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "${{ env.PYTHON_VERSION }}"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
 
       - name: Install Dependencies using Poetry
@@ -45,17 +45,17 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "${{ env.PYTHON_VERSION }}"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install poetry
-        run: pipx install poetry
+        run: pip install poetry
 
       - name: Determine dependencies
         run: poetry lock
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "${{ env.PYTHON_VERSION }}"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
 
       - name: Install Dependencies using Poetry
@@ -66,22 +66,31 @@ jobs:
 
   testing:
     runs-on: ubuntu-latest
+
+    services:
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
+
     steps:
       - uses: actions/checkout@v3
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "${{ env.PYTHON_VERSION }}"
-
+          python-version: ${{ env.PYTHON_VERSION }}
+      
       - name: Install poetry
-        run: pipx install poetry
+        run: pip install poetry
 
       - name: Determine dependencies
         run: poetry lock
 
       - uses: actions/setup-python@v4
         with:
-          python-version: "${{ env.PYTHON_VERSION }}"
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
 
       - name: Install dependencies

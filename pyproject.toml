@@ -1,14 +1,17 @@
 [tool.poetry]
 name = "snakemake-storage-plugin-az"
 version = "0.1.0"
-description = ""
-authors = ["jakevc <jake.vancampen7@gmail.com>"]
+description = "A Snakemake storage plugin to read and write from Azure Blob Storage"
+authors = ["Jake VanCampen <jake.vancampen7@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-snakemake-interface-common = "^1.14.2"
-snakemake-interface-storage-plugins = "^1.2.3"
+snakemake-interface-common = "1.14.3"
+snakemake-interface-storage-plugins = "^2.1.0"
+azure-storage-blob = "^12.19.0"
+azure-core = "^1.29.5"
+azure-identity = "^1.15.0"
 
 
 [tool.poetry.group.dev.dependencies]
