@@ -347,9 +347,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
         # bucket exists
         if not self.container_exists():
-            cache.exists_remote[self.cache_key] = False
+            cache.exists_in_storage[self.cache_key] = False
         else:
-            cache.exists_remote[self.cache_key] = True
+            cache.exists_in_storage[self.cache_key] = True
             for o in self.container().list_blobs():
                 key = self.cache_key(self._local_suffix_from_key(o.name))
                 cache.mtime[key] = Mtime(storage=o.last_modified.timestamp())
