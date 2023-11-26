@@ -1,4 +1,4 @@
-# Snakemake Storage Plugin Az
+# Snakemake Storage Plugin Azure
 
 Azure Blob Storage plugin for snakemake.
 
