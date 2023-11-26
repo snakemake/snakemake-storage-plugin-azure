@@ -12,7 +12,7 @@ from snakemake_interface_storage_plugins.settings import StorageProviderSettings
 from snakemake_interface_storage_plugins.storage_provider import StorageProviderBase
 from snakemake_interface_storage_plugins.tests import TestStorageBase
 
-from snakemake_storage_plugin_az import StorageProvider, StorageProviderSettings
+from snakemake_storage_plugin_azure import StorageProvider, StorageProviderSettings
 
 
 class TestStorageNoSettings(TestStorageBase):
