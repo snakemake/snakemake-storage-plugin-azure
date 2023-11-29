@@ -2,8 +2,6 @@
 
 Azure Blob Storage plugin for snakemake.
 
-This plugin is in draft form ! This is scaffolded from snakemake/poetry-snakemake-plugin.
-
 # Testing
 
 Testing this plugin locally require the azurite storage emulator to be running locally. 
