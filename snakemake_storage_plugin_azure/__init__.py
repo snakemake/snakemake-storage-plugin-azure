@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass, field
 from pathlib import PosixPath
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, List, Optional
 from urllib.parse import unquote, urlparse
 
 from azure.core.credentials import AzureSasCredential
@@ -20,6 +20,7 @@ from snakemake_interface_storage_plugins.storage_provider import (
     ExampleQuery,
     StorageProviderBase,
     StorageQueryValidationResult,
+    QueryType,
 )
 
 
@@ -184,12 +185,15 @@ class StorageProvider(StorageProviderBase):
         ...
 
     @classmethod
-    def example_query(cls) -> ExampleQuery:
+    def example_queries(cls) -> List[ExampleQuery]:
         """Return an example query with description for this storage provider."""
-        return ExampleQuery(
-            query="az://account/container/path/example/file.txt",
-            description="A file in an Azure Blob Storage Account Container",
-        )
+        return [
+            ExampleQuery(
+                query="az://account/container/path/example/file.txt",
+                type=QueryType.ANY,
+                description="A file in an Azure Blob Storage Account Container",
+            )
+        ]
 
     @classmethod
     def is_valid_query(cls, query: str) -> StorageQueryValidationResult:
