@@ -11,7 +11,7 @@ keywords = ["snakemake", "plugin", "storage", "azure"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-snakemake-interface-common = "1.14.3"
+snakemake-interface-common = "^1.15.0"
 snakemake-interface-storage-plugins = "^3.0.0"
 azure-storage-blob = "^12.19.0"
 azure-core = "^1.29.5"
