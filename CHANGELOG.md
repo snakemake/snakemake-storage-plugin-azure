@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.1.3...v0.1.4) (2023-12-19)
+
+
+### Bug Fixes
+
+* relax dependency ([7bb57f6](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/7bb57f65f727d97b647e42123c48a8bb4248852f))
+
 ## [0.1.3](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.1.2...v0.1.3) (2023-12-08)
 
 
