@@ -86,10 +86,7 @@ class StorageProviderSettings(StorageProviderSettingsBase):
     access_key: Optional[str] = field(
         default=None,
         metadata={
-            "help": (
-                "Azure Blob Storage Account Access Key Credential.",
-                "If set, takes precedence over sas_token credential.",
-            ),
+            "help": "Azure Blob Storage Account Access Key Credential.\nIf set, takes precedence over sas_token credential.",
             "env_var": False,
         },
     )
