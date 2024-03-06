@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.1.4...v0.1.5) (2024-03-06)
+
+
+### Bug Fixes
+
+* correct concat error in register_cli_args ([#8](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/8)) ([8a9ca82](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/8a9ca82b14d333a1ade13bb0659de27e5d139dd3))
+
 ## [0.1.4](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.1.3...v0.1.4) (2023-12-19)
 
 
