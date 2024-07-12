@@ -140,6 +140,7 @@ class StorageProvider(StorageProviderBase):
         # This is optional and can be removed if not needed.
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
+
         self.bsc = BlobServiceClient(
             self.settings.endpoint_url, credential=self.settings.credential
         )
@@ -248,7 +249,6 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
         if self.is_valid_query():
-
             self.account_name = parse_query_account_name(self.query)
             self.blob_path = parse_query_path(self.query)
             self.container_name = parse_query_container_name(self.query)
