@@ -11,11 +11,11 @@ keywords = ["snakemake", "plugin", "storage", "azure"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-snakemake-interface-common = "^1.15.0"
-snakemake-interface-storage-plugins = "^3.0.0"
-azure-storage-blob = "^12.19.0"
-azure-core = "^1.29.5"
-azure-identity = "^1.15.0"
+snakemake-interface-common = "^1.17.2"
+snakemake-interface-storage-plugins = "^3.2.3"
+azure-storage-blob = "^12.20.0"
+azure-core = "^1.30.2"
+azure-identity = "^1.17.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.10.1"

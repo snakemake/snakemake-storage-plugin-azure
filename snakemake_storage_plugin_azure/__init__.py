@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass, field
 from pathlib import PosixPath
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, List, Optional, Tuple
 from urllib.parse import unquote, urlparse
 
 from azure.core.credentials import AzureSasCredential
@@ -235,7 +235,7 @@ class StorageProvider(StorageProviderBase):
             valid=True,
         )
 
-    def parse_query_parts(self, query: str) -> (str, str, Optional[str]):
+    def parse_query_parts(self, query: str) -> Tuple[str, str, Optional[str]]:
         """
         Parses query parts for the provider.
 
