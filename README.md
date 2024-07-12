@@ -15,3 +15,7 @@ Then execute the tests:
 ```
 poetry run coverage run -m pytest tests/tests.py
 ```
+
+# CLI 
+
+`snakemake --default-storage-provider azure --default-storage-prefix ...`
