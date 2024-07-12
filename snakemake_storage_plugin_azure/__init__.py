@@ -1,8 +1,6 @@
-import re
 from dataclasses import dataclass, field
-from pathlib import PosixPath
-from typing import Any, Iterable, List, Optional, Tuple
-from urllib.parse import unquote, urlparse
+from typing import Iterable, List, Optional
+from urllib.parse import urlparse
 
 from azure.core.credentials import AzureSasCredential
 from azure.core.exceptions import HttpResponseError
@@ -24,29 +22,15 @@ from snakemake_interface_storage_plugins.storage_provider import (
     StorageQueryValidationResult,
 )
 
-
-def is_valid_azure_blob_endpoint(endpoint_url: str) -> bool:
-    """
-    Validates the Azure Blob endpoint.
-
-    Returns True if endpoint_url matches the Azure Blob Storage
-    endpoint regex or if endpoint_url matches the local
-    azurite storage emulator endpoint used for testing.
-
-    Args:
-        endpoint_url (str): The name of the Azure Blob Storage Account endpoint
-
-    Returns:
-        bool: True if the endpoint_url is a valid Azure Blob endpoint.
-    """
-    url_pattern = re.compile(
-        r"^https:\/\/[a-z0-9]+(\.[a-z0-9]+)*\.blob\.core\.windows\.net\/?(.+)?$"
-    )
-    mock_pattern = re.compile(r"^http://127\.0\.0\.1:10000/[a-zA-Z0-9]+$")
-
-    return bool(url_pattern.match(endpoint_url)) or bool(
-        mock_pattern.match(endpoint_url)
-    )
+from snakemake_storage_plugin_azure.utils import (
+    is_valid_blob_endpoint,
+    is_valid_mock_endpoint,
+    parse_account_name_from_blob_endpoint_url,
+    parse_account_name_from_mock_endpoint_url,
+    parse_query_account_name,
+    parse_query_container_name,
+    parse_query_path,
+)
 
 
 # Optional:
@@ -74,12 +58,6 @@ class StorageProviderSettings(StorageProviderSettingsBase):
             # for setting defaults
             # (https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles).
             "env_var": False,
-            # Optionally specify a function that parses the value given by the user.
-            # This is useful to create complex types from the user input.
-            "parse_func": ...,
-            # If a parse_func is specified, you also have to specify an unparse_func
-            # that converts the parsed value back to a string.
-            "unparse_func": ...,
             # Optionally specify that setting is required when the executor is in use.
             "required": True,
         },
@@ -100,15 +78,23 @@ class StorageProviderSettings(StorageProviderSettingsBase):
         },
     )
 
-    def endpoint_url_is_mock(self) -> bool:
+    def blob_endpoint_is_valid(endpoint_url: str | None) -> bool:
         """
-        Returns true if endpoint url matches the mock pattern.
+        Validates the endpoint url.
+
+        Returns True if endpoint_url matches the Azure Blob Storage
+        endpoint regex or if endpoint_url matches the local
+        azurite storage emulator endpoint used for testing.
+
+        Args:
+            endpoint_url (str): The name of the Azure Blob Storage Account endpoint
 
         Returns:
-            bool: True if self.endpoint_url matches mock_pattern, False otherwise
+            bool: True if the endpoint_url is a valid Azure Blob endpoint.
         """
-        mock_pattern = re.compile(r"^http://127\.0\.0\.1:10000/[a-zA-Z0-9]+$")
-        return mock_pattern.match(self.endpoint_url)
+        return is_valid_blob_endpoint(endpoint_url) or is_valid_mock_endpoint(
+            endpoint_url
+        )
 
     def set_storage_account_name(self):
         """
@@ -120,32 +106,24 @@ class StorageProviderSettings(StorageProviderSettingsBase):
         Raises:
             ValueError: if urlparse fails to parse the endpoint_url or parse the path.
         """
-        try:
-            if self.endpoint_url_is_mock:
-                parsed = urlparse(self.endpoint_url)
-                self.storage_account_name = parsed.path.lstrip("/")
-            else:
-                parsed = urlparse(self.endpoint_url)
-                account_name = parsed.netloc
-                if account_name != "":
-                    self.storage_account_name = account_name.split(".")[0]
-        except Exception as e:
-            raise ValueError(f"unable to set storage account name: {e}")
-
-    def __post_init__(self):
-        if not is_valid_azure_blob_endpoint(self.endpoint_url):
-            raise ValueError(
-                f"invalid Azure Storage Blob Endpoint URL: {self.endpoint_url}"
+        if is_valid_mock_endpoint(self.endpoint_url):
+            self.storage_account_name = parse_account_name_from_mock_endpoint_url(
+                self.endpoint_url
+            )
+        else:
+            self.storage_account_name = parse_account_name_from_blob_endpoint_url(
+                self.endpoint_url
             )
 
-        self.set_storage_account_name()
-
-        if self.access_key:
-            self.credential = self.access_key
-        elif self.sas_token:
-            self.credential = AzureSasCredential(self.sas_token)
-        else:
-            self.credential = DefaultAzureCredential()
+    def __post_init__(self):
+        if self.endpoint_url is not None:
+            self.set_storage_account_name()
+            if self.access_key:
+                self.credential = self.access_key
+            elif self.sas_token:
+                self.credential = AzureSasCredential(self.sas_token)
+            else:
+                self.credential = DefaultAzureCredential()
 
 
 # Required:
@@ -211,6 +189,7 @@ class StorageProvider(StorageProviderBase):
         # and considered valid. The wildcards will be resolved before the storage
         # object is actually used.
         try:
+            print(f"QUERY:{query}")
             parsed = urlparse(query)
         except Exception as e:
             return StorageQueryValidationResult(
@@ -235,47 +214,22 @@ class StorageProvider(StorageProviderBase):
             valid=True,
         )
 
-    def parse_query_parts(self, query: str) -> Tuple[str, str, Optional[str]]:
-        """
-        Parses query parts for the provider.
+    def get_storage_account_name(query: str) -> str:
+        """Return the storage account name from the query."""
+        return parse_query_account_name(query)
 
-        Args:
-            query (str): the azure storage query string.
-
-        Returns:
-            (account: str, container: str, bpath: str): a tuple of the storage details
-            parsed from the query string.
-        """
-        try:
-            parsed = urlparse(query)
-            account = parsed.netloc
-
-            path_parts = PosixPath(unquote(parsed.path)).parts
-
-            container = ""
-            if len(path_parts) > 2:
-                container = path_parts[1]
-
-            bpath = "/".join(path_parts[2:])
-
-        except Exception as e:
-            raise ValueError(f"unable to parse query parts: {path_parts}, {e}")
-
-        return account, container, bpath
-
-    def get_container_name(self, query: str) -> str:
+    def get_storage_container_name(self, query: str) -> str:
         """
         Returns the container name from query.
         """
-        _, c, _ = self.parse_query_parts(query)
-        return c
+        return parse_query_container_name(query)
 
-    def list_objects(self, query: Any) -> Iterable[str]:
+    def list_objects(self) -> Iterable[str]:
         """Return an iterator over all objects in the storage that match the query.
 
         This is optional and can raise a NotImplementedError() instead.
         """
-        cc = self.bsc.get_container_client(self.get_container_name())
+        cc = self.bsc.get_container_client(self.get_storage_container_name())
         return [o for o in cc.list_blob_names()]
 
 
@@ -294,12 +248,17 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
         if self.is_valid_query():
-            (
-                self.account_name,
-                self.container_name,
-                self.blob_path,
-            ) = self.provider.parse_query_parts(self.query)
+
+            self.account_name = parse_query_account_name(self.query)
+            self.blob_path = parse_query_path(self.query)
+            self.container_name = parse_query_container_name(self.query)
             self._local_suffix = self._local_suffix_from_key(self.blob_path)
+
+            print(f"query: {self.query}")
+            print(f"account_name: {self.account_name}")
+            print(f"container_name: {self.container_name}")
+            print(f"blob_path: {self.blob_path}")
+            print(f"local_suffix: {self._local_suffix}")
 
             # check the storage account parsed form the endpoint_url
             # matches that parsed from the query
@@ -349,7 +308,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             # found
             return
 
-        # bucket exists
+        # container exists
         if not self.container_exists():
             cache.exists_in_storage[self.cache_key] = False
         else:
@@ -400,7 +359,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     @retry_decorator
     def retrieve_object(self):
         # Ensure that the object is accessible locally under self.local_path()
-        ...
+        pass
 
     # The following to methods are only required if the class inherits from
     # StorageObjectReadWrite.
@@ -429,7 +388,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     def upload_blob_to_storage(self):
         """Uploads the blob to storage, opening a connection and streaming the bytes."""
-        with open(self.local_path, "rb") as data:
+        with open(self.local_path(), "rb") as data:
             self.blob().upload_blob(data, overwrite=True)
 
     @retry_decorator
@@ -440,7 +399,6 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     # The following to methods are only required if the class inherits from
     # StorageObjectGlob.
-
     @retry_decorator
     def list_candidate_matches(self) -> Iterable[str]:
         """Return a list of candidate matches in the storage for the query."""
