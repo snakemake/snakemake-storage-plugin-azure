@@ -6,6 +6,7 @@ from urllib.parse import unquote, urlparse
 
 from azure.core.credentials import AzureSasCredential
 from azure.core.exceptions import HttpResponseError
+from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 from snakemake_interface_storage_plugins.common import Operation
 from snakemake_interface_storage_plugins.io import IOCacheStorageInterface, Mtime
@@ -138,11 +139,12 @@ class StorageProviderSettings(StorageProviderSettingsBase):
 
         self.set_storage_account_name()
 
-        self.credential = None
         if self.access_key:
             self.credential = self.access_key
         elif self.sas_token:
             self.credential = AzureSasCredential(self.sas_token)
+        else:
+            self.credential = DefaultAzureCredential()
 
 
 # Required:
