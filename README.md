@@ -1,6 +1,6 @@
 # Snakemake Storage Plugin Azure
 
-Azure Blob Storage plugin for snakemake.
+Azure Blob Storage plugin for snakemake. For documentation and usage instructions, see the [Snakemake Plugin Catalog](https://snakemake.github.io/snakemake-plugin-catalog/plugins/storage/azure.html).
 
 # Testing
 
