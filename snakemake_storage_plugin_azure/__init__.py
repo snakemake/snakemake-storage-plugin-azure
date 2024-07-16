@@ -190,7 +190,6 @@ class StorageProvider(StorageProviderBase):
         # and considered valid. The wildcards will be resolved before the storage
         # object is actually used.
         try:
-            print(f"QUERY:{query}")
             parsed = urlparse(query)
         except Exception as e:
             return StorageQueryValidationResult(
@@ -253,12 +252,6 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             self.blob_path = parse_query_path(self.query)
             self.container_name = parse_query_container_name(self.query)
             self._local_suffix = self._local_suffix_from_key(self.blob_path)
-
-            print(f"query: {self.query}")
-            print(f"account_name: {self.account_name}")
-            print(f"container_name: {self.container_name}")
-            print(f"blob_path: {self.blob_path}")
-            print(f"local_suffix: {self._local_suffix}")
 
             # check the storage account parsed form the endpoint_url
             # matches that parsed from the query
