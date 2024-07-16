@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
 from urllib.parse import urlparse
 
-from azure.core.credentials import AzureSasCredential
 from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
@@ -23,10 +22,6 @@ from snakemake_interface_storage_plugins.storage_provider import (
 )
 
 from snakemake_storage_plugin_azure.utils import (
-    is_valid_blob_endpoint,
-    is_valid_mock_endpoint,
-    parse_account_name_from_blob_endpoint_url,
-    parse_account_name_from_mock_endpoint_url,
     parse_query_account_name,
     parse_query_container_name,
     parse_query_path,
@@ -45,10 +40,10 @@ from snakemake_storage_plugin_azure.utils import (
 # settings.
 @dataclass
 class StorageProviderSettings(StorageProviderSettingsBase):
-    endpoint_url: Optional[str] = field(
+    account_name: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Azure Blob Storage Account endpoint url",
+            "help": "Azure Blob Storage Account name",
             # Optionally request that setting is also available for specification
             # via an environment variable. The variable will be named automatically as
             # SNAKEMAKE_<storage-plugin-name>_<param-name>, all upper case.
@@ -62,68 +57,6 @@ class StorageProviderSettings(StorageProviderSettingsBase):
             "required": True,
         },
     )
-    access_key: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "Azure Blob Storage Account Access Key Credential."
-            "If set, takes precedence over sas_token credential.",
-            "env_var": False,
-        },
-    )
-    sas_token: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "Azure Blob Storage Account SAS Token Credential",
-            "env_var": False,
-        },
-    )
-
-    def blob_endpoint_is_valid(endpoint_url: str | None) -> bool:
-        """
-        Validates the endpoint url.
-
-        Returns True if endpoint_url matches the Azure Blob Storage
-        endpoint regex or if endpoint_url matches the local
-        azurite storage emulator endpoint used for testing.
-
-        Args:
-            endpoint_url (str): The name of the Azure Blob Storage Account endpoint
-
-        Returns:
-            bool: True if the endpoint_url is a valid Azure Blob endpoint.
-        """
-        return is_valid_blob_endpoint(endpoint_url) or is_valid_mock_endpoint(
-            endpoint_url
-        )
-
-    def set_storage_account_name(self):
-        """
-        Sets the storage account name
-
-        Sets self.storage_account_name by parsing from the endpoint_url. If the endpoint
-        is the local emulator, the parsing is slightly different.
-
-        Raises:
-            ValueError: if urlparse fails to parse the endpoint_url or parse the path.
-        """
-        if is_valid_mock_endpoint(self.endpoint_url):
-            self.storage_account_name = parse_account_name_from_mock_endpoint_url(
-                self.endpoint_url
-            )
-        else:
-            self.storage_account_name = parse_account_name_from_blob_endpoint_url(
-                self.endpoint_url
-            )
-
-    def __post_init__(self):
-        if self.endpoint_url is not None:
-            self.set_storage_account_name()
-            if self.access_key:
-                self.credential = self.access_key
-            elif self.sas_token:
-                self.credential = AzureSasCredential(self.sas_token)
-            else:
-                self.credential = DefaultAzureCredential()
 
 
 # Required:
@@ -142,7 +75,7 @@ class StorageProvider(StorageProviderBase):
         # and set additional attributes.
 
         self.bsc = BlobServiceClient(
-            self.settings.endpoint_url, credential=self.settings.credential
+            self.settings.endpoint_url, credential=DefaultAzureCredential()
         )
 
     def use_rate_limiter(self) -> bool:
