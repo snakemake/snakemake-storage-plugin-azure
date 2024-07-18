@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.2.0...v0.2.1) (2024-07-18)
+
+
+### Bug Fixes
+
+* retrieve ([#19](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/19)) ([a08a6be](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/a08a6be114abc55175a9dfd3fafd8683dbb5301e))
+
 ## [0.2.0](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.1.6...v0.2.0) (2024-07-18)
 
 
