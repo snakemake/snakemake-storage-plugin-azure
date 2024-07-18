@@ -276,7 +276,6 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     @retry_decorator
     def retrieve_object(self):
-        self.local_path().mkdir(exist_ok=True)
         self.download_blob_from_storage()
         # Ensure that the object is accessible locally under self.local_path()
         if not self.local_path().exists():
