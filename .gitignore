@@ -161,3 +161,8 @@ cython_debug/
 #.idea/
 
 poetry.lock
+
+# Snakemake
+Snakefile
+*.smk
+.snakemake
