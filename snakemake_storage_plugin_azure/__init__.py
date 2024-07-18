@@ -276,12 +276,16 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
     @retry_decorator
     def retrieve_object(self):
+        self.local_path().mkdir(exist_ok=True)
+        self.download_blob_from_storage()
         # Ensure that the object is accessible locally under self.local_path()
-        pass
+        if not self.local_path().exists():
+            raise FileNotFoundError(
+                f"File {self.local_path()} not found after download."
+            )
 
     # The following to methods are only required if the class inherits from
     # StorageObjectReadWrite.
-
     @retry_decorator
     def store_object(self):
         """
@@ -302,6 +306,12 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         """Uploads the blob to storage, opening a connection and streaming the bytes."""
         with open(self.local_path(), "rb") as data:
             self.blob_client().upload_blob(data, overwrite=True)
+
+    def download_blob_from_storage(self):
+        """Downloads the blob from storage,
+        opening connection and streaming the bytes."""
+        with open(self.local_path(), "wb") as data:
+            data.write(self.blob_client().download_blob().readall())
 
     @retry_decorator
     def remove(self):
