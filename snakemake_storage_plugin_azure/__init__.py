@@ -1,8 +1,8 @@
+import os
 from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
 from urllib.parse import urlparse
 
-from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 from snakemake_interface_storage_plugins.common import Operation
@@ -73,10 +73,18 @@ class StorageProvider(StorageProviderBase):
         # This is optional and can be removed if not needed.
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
+        endpoint_url = f"https://{self.settings.account_name}.blob.core.windows.net"
 
-        self.bsc = BlobServiceClient(
-            self.settings.endpoint_url, credential=DefaultAzureCredential()
-        )
+        # use mock storage credential for tests
+        test_credential = os.getenv("AZURITE_CONNECTION_STRING")
+        if test_credential:
+            self.blob_account_client = BlobServiceClient.from_connection_string(
+                test_credential
+            )
+        else:
+            self.blob_account_client = BlobServiceClient(
+                endpoint_url, credential=DefaultAzureCredential()
+            )
 
     def use_rate_limiter(self) -> bool:
         """Return False if no rate limiting is needed for this provider."""
@@ -147,10 +155,6 @@ class StorageProvider(StorageProviderBase):
             valid=True,
         )
 
-    def get_storage_account_name(query: str) -> str:
-        """Return the storage account name from the query."""
-        return parse_query_account_name(query)
-
     def get_storage_container_name(self, query: str) -> str:
         """
         Returns the container name from query.
@@ -162,7 +166,9 @@ class StorageProvider(StorageProviderBase):
 
         This is optional and can raise a NotImplementedError() instead.
         """
-        cc = self.bsc.get_container_client(self.get_storage_container_name())
+        cc = self.blob_account_client.get_container_client(
+            self.get_storage_container_name()
+        )
         return [o for o in cc.list_blob_names()]
 
 
@@ -180,6 +186,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # This is optional and can be removed if not needed.
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
+        self.blob_account_client: BlobServiceClient = self.provider.blob_account_client
         if self.is_valid_query():
             self.account_name = parse_query_account_name(self.query)
             self.blob_path = parse_query_path(self.query)
@@ -188,37 +195,22 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
 
             # check the storage account parsed form the endpoint_url
             # matches that parsed from the query
-            if self.account_name != self.provider.settings.storage_account_name:
+            if self.account_name != self.provider.settings.account_name:
                 raise ValueError(
                     f"query account name: {self.account_name} must "
                     "match that from endpoint url: "
-                    f"{self.provider.settings.storage_account_name}"
+                    f"{self.provider.settings.account_name}"
                 )
 
-    def container(self):
+    def container_client(self) -> ContainerClient:
         """Return initialized ContainerClient."""
-        try:
-            cc: ContainerClient = self.provider.bsc.get_container_client(
-                self.container_name
-            )
-        except Exception as e:
-            raise ConnectionError(
-                "failed to initialize ContainerClient for container:"
-                f" {self.container_name}: {e}"
-            )
-        return cc
+        return self.blob_account_client.get_container_client(self.container_name)
 
-    def blob(self):
+    def blob_client(self) -> BlobClient:
         """Return initialized BlobClient."""
-        try:
-            bc: BlobClient = self.provider.bsc.get_container_client(
-                self.container_name
-            ).get_blob_client(self.blob_path)
-        except Exception as e:
-            raise ConnectionError(
-                f"failed to initialize BlobClient for blob:" f" {self.blob_path}: {e}"
-            )
-        return bc
+        return self.blob_account_client.get_blob_client(
+            self.container_name, self.blob_path
+        )
 
     async def inventory(self, cache: IOCacheStorageInterface):
         """From this file, try to find as much existence and modification date
@@ -235,11 +227,11 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             return
 
         # container exists
-        if not self.container_exists():
+        if not self.container_client().exists():
             cache.exists_in_storage[self.cache_key] = False
         else:
             cache.exists_in_storage[self.cache_key] = True
-            for o in self.container().list_blobs():
+            for o in self.container_client().list_blobs():
                 key = self.cache_key(self._local_suffix_from_key(o.name))
                 cache.mtime[key] = Mtime(storage=o.last_modified.timestamp())
                 cache.size[key] = o.size
@@ -267,20 +259,20 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     @retry_decorator
     def exists(self) -> bool:
         """Return True if the object exists."""
-        if not self.container_exists():
+        if not self.container_client().exists():
             return False
         else:
-            return self.blob().exists()
+            return self.blob_client().exists()
 
     @retry_decorator
     def mtime(self) -> float:
         """Returns the modification time."""
-        return self.blob().get_blob_properties().last_modified.timestamp()
+        return self.blob_client().get_blob_properties().last_modified.timestamp()
 
     @retry_decorator
     def size(self) -> int:
         """Returns the size in bytes."""
-        return self.blob().get_blob_properties().size
+        return self.blob_client().get_blob_properties().size
 
     @retry_decorator
     def retrieve_object(self):
@@ -298,30 +290,24 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         If the storage container does not exist, it is created. This check creates the
         dependency that one must provide a credential with container create permissions.
         """
+        if not self.container_client().exists():
+            self.blob_account_client.create_container(self.container_name)
 
-        try:
-            if not self.container_exists():
-                self.container().create_container(self.container_name)
-        # pass on container exists exception
-        except Exception as e:
-            if e.status_code == 403:
-                pass
-
-        # Ensure that the object is stored at the location specified by
-        # self.local_path().
+        # Ensure that the object is stored at the location
+        # specified by self.local_path().
         if self.local_path().exists():
             self.upload_blob_to_storage()
 
     def upload_blob_to_storage(self):
         """Uploads the blob to storage, opening a connection and streaming the bytes."""
         with open(self.local_path(), "rb") as data:
-            self.blob().upload_blob(data, overwrite=True)
+            self.blob_client().upload_blob(data, overwrite=True)
 
     @retry_decorator
     def remove(self):
         """Removes the object from blob storage."""
-        if self.blob().exists():
-            self.blob().delete_blob()
+        if self.blob_client().exists():
+            self.blob_client().delete_blob()
 
     # The following to methods are only required if the class inherits from
     # StorageObjectGlob.
@@ -331,18 +317,3 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # This is used by glob_wildcards() to find matches for wildcards in the query.
         # The method has to return concretized queries without any remaining wildcards.
         ...
-
-    def container_exists(self) -> bool:
-        """Returns True if container exists, False otherwise."""
-        try:
-            return self.container().exists()
-        except HttpResponseError as e:
-            if e.status_code == 403:
-                raise PermissionError(
-                    "the provided credential does not have permission to list "
-                    "containers on this storage account"
-                )
-            else:
-                raise e
-        except Exception as e:
-            raise e
