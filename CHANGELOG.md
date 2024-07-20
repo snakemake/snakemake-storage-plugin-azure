@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.2.1...v0.2.2) (2024-07-20)
+
+
+### Bug Fixes
+
+* accountquery ([#21](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/21)) ([1e27b9d](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/1e27b9d48a953c6d68cdeea21f7a980925458c64)), closes [#17](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/17)
+
 ## [0.2.1](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.2.0...v0.2.1) (2024-07-18)
 
 
