@@ -34,7 +34,7 @@ The storage account and container that the output file is streamed to is specifi
 ```
 snakemake -j1 \
     --default-storage-provider azure \
-    --default-storage-prefix "az://account/container"
+    --default-storage-prefix "az://container"
     --storage-azure-endpoint-url https://account.blob.core.windows.net \
     --verbose
 ```
