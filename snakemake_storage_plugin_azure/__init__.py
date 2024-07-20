@@ -22,9 +22,8 @@ from snakemake_interface_storage_plugins.storage_provider import (
 )
 
 from snakemake_storage_plugin_azure.utils import (
-    parse_query_account_name,
+    container_name_is_valid,
     parse_query_container_name,
-    parse_query_path,
 )
 
 
@@ -109,7 +108,7 @@ class StorageProvider(StorageProviderBase):
         """Return an example query with description for this storage provider."""
         return [
             ExampleQuery(
-                query="az://account/container/path/example/file.txt",
+                query="az://container/path/example/file.txt",
                 type=QueryType.ANY,
                 description="A file in an Azure Blob Storage Account Container",
             )
@@ -144,11 +143,12 @@ class StorageProvider(StorageProviderBase):
                 valid=False,
                 reason="must start with az (az://...)",
             )
-        if not parsed.netloc.isalnum:
+        if not container_name_is_valid(parsed.netloc):
             return StorageQueryValidationResult(
                 query=query,
                 valid=False,
-                reason="azure storage account name must be strictly alphanumeric",
+                reason="Azure Storage Contianer name must contain only alphanumeric "
+                "or dash characters",
             )
         return StorageQueryValidationResult(
             query=query,
@@ -188,19 +188,10 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # and set additional attributes.
         self.blob_account_client: BlobServiceClient = self.provider.blob_account_client
         if self.is_valid_query():
-            self.account_name = parse_query_account_name(self.query)
-            self.blob_path = parse_query_path(self.query)
-            self.container_name = parse_query_container_name(self.query)
+            parsed = urlparse(self.query)
+            self.container_name = parsed.netloc
+            self.blob_path = parsed.path.lstrip("/")
             self._local_suffix = self._local_suffix_from_key(self.blob_path)
-
-            # check the storage account parsed form the endpoint_url
-            # matches that parsed from the query
-            if self.account_name != self.provider.settings.account_name:
-                raise ValueError(
-                    f"query account name: {self.account_name} must "
-                    "match that from endpoint url: "
-                    f"{self.provider.settings.account_name}"
-                )
 
     def container_client(self) -> ContainerClient:
         """Return initialized ContainerClient."""

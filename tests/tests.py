@@ -22,13 +22,10 @@ class TestStorageNoSettings(TestStorageBase):
     def get_query_not_existing(self, tmp_path) -> str:
         container = uuid.uuid4().hex
         path = uuid.uuid4().hex
-        return f"az://{AZURITE_STORAGE_ACCOUNT}/{container}/{path}"
+        return f"az://{container}/{path}"
 
     def get_query(self, tmp_path) -> str:
-        return (
-            f"az://{AZURITE_STORAGE_ACCOUNT}/{AZURITE_TEST_CONTAINER}/"
-            f"{AZURITE_TEST_BLOB}"
-        )
+        return f"az://{AZURITE_TEST_CONTAINER}/{AZURITE_TEST_BLOB}"
 
     def get_storage_provider_cls(self) -> Type[StorageProviderBase]:
         # Return the StorageProvider class of this plugin
