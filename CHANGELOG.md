@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.2.2...v0.3.0) (2024-07-28)
+
+
+### Features
+
+* use credential chain to prefer cli credential ([#23](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/23)) ([723575c](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/723575c2951790af75ad6cb47e3c231b8a1c9827))
+
 ## [0.2.2](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.2.1...v0.2.2) (2024-07-20)
 
 
