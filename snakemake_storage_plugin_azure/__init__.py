@@ -3,7 +3,12 @@ from dataclasses import dataclass, field
 from typing import Iterable, List, Optional
 from urllib.parse import urlparse
 
-from azure.identity import DefaultAzureCredential
+from azure.identity import (
+    AzureCliCredential,
+    ChainedTokenCredential,
+    EnvironmentCredential,
+    ManagedIdentityCredential,
+)
 from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 from snakemake_interface_storage_plugins.common import Operation
 from snakemake_interface_storage_plugins.io import IOCacheStorageInterface, Mtime
@@ -81,8 +86,16 @@ class StorageProvider(StorageProviderBase):
                 test_credential
             )
         else:
+            # prefer azure cli credential,
+            # then managed identity,
+            # then environment
+            credential_chain = (
+                AzureCliCredential(),
+                ManagedIdentityCredential(),
+                EnvironmentCredential(),
+            )
             self.blob_account_client = BlobServiceClient(
-                endpoint_url, credential=DefaultAzureCredential()
+                endpoint_url, credential=ChainedTokenCredential(*credential_chain)
             )
 
     def use_rate_limiter(self) -> bool:
