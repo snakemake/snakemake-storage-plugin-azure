@@ -5,9 +5,9 @@ from urllib.parse import urlparse
 
 from azure.identity import (
     AzureCliCredential,
-    ManagedIdentityCredential,
+    ChainedTokenCredential,
     EnvironmentCredential,
-    ChainedTokenCredential
+    ManagedIdentityCredential,
 )
 from azure.storage.blob import BlobClient, BlobServiceClient, ContainerClient
 from snakemake_interface_storage_plugins.common import Operation
@@ -86,14 +86,13 @@ class StorageProvider(StorageProviderBase):
                 test_credential
             )
         else:
-
-            # prefer azure cli credential, 
+            # prefer azure cli credential,
             # then managed identity,
             # then environment
             credential_chain = (
                 AzureCliCredential(),
                 ManagedIdentityCredential(),
-                EnvironmentCredential()
+                EnvironmentCredential(),
             )
             self.blob_account_client = BlobServiceClient(
                 endpoint_url, credential=ChainedTokenCredential(*credential_chain)
