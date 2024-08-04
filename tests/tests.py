@@ -17,7 +17,10 @@ from snakemake_storage_plugin_azure import StorageProvider, StorageProviderSetti
 
 class TestStorageNoSettings(TestStorageBase):
     __test__ = True
-    retrieve_only = True
+    retrieve_only = False
+    store_only = False
+    delete = True
+    files_only = False
 
     def get_query_not_existing(self, tmp_path) -> str:
         container = uuid.uuid4().hex
