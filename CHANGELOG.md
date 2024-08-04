@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.3.0...v0.4.0) (2024-08-04)
+
+
+### Features
+
+* directory support ([#25](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/25)) ([6cb5935](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/6cb59350f7b2eb0d23f8938d9a11ecff2c9bab42))
+
 ## [0.3.0](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.2.2...v0.3.0) (2024-07-28)
 
 
