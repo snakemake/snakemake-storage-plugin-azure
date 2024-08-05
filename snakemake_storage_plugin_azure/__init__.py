@@ -262,7 +262,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         return (
             item
             for item in self.container_client().list_blobs(name_starts_with=prefix)
-            if item.name != prefix
+            if item.name != self.blob_path
         )
 
     def get_inventory_parent(self) -> Optional[str]:
@@ -398,7 +398,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             return (item.key for item in self.get_prefix_blobs(prefix=prefix))
         else:
             raise WorkflowError(
-                "S3 storage object {self.query} cannot be used to list matching "
+                "storage object {self.query} cannot be used to list matching "
                 "objects because bucket name contains a wildcard, which is not "
                 "supported."
             )
