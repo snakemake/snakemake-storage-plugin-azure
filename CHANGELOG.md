@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.4.0...v0.4.1) (2024-08-05)
+
+
+### Bug Fixes
+
+* correctly exclude self from get_prefix_blobs ([#27](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/27)) ([232fea9](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/232fea98cc921e22e5f29e5400b02a840f3105e8))
+
 ## [0.4.0](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.3.0...v0.4.0) (2024-08-04)
 
 
