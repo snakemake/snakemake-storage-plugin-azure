@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.4.1...v0.4.2) (2024-08-06)
+
+
+### Bug Fixes
+
+* implement touch ([#29](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/29)) ([461d210](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/461d2101c2b9f6c3647a9ca426dcf512e96c47b3))
+
 ## [0.4.1](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.4.0...v0.4.1) (2024-08-05)
 
 
