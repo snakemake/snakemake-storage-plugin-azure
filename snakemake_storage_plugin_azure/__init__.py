@@ -27,6 +27,7 @@ from snakemake_interface_storage_plugins.settings import StorageProviderSettings
 from snakemake_interface_storage_plugins.storage_object import (
     StorageObjectGlob,
     StorageObjectRead,
+    StorageObjectTouch,
     StorageObjectWrite,
     retry_decorator,
 )
@@ -199,7 +200,9 @@ class StorageProvider(StorageProviderBase):
 # storage (e.g. because it is read-only see
 # snakemake-storage-http for comparison), remove the corresponding base classes
 # from the list of inherited items.
-class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
+class StorageObject(
+    StorageObjectRead, StorageObjectWrite, StorageObjectGlob, StorageObjectTouch
+):
     # For compatibility with future changes, you should not overwrite the __init__
     # method. Instead, use __post_init__ to set additional attributes and initialize
     # further stuff.
@@ -356,7 +359,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
             # Ensure that the object is stored at the location
             # specified by self.local_path().
             if self.local_path().exists():
-                self.upload_blob_to_storage(self.local_path(), self.local_path())
+                self.upload_blob_to_storage(self.local_path(), self.blob_path)
 
     def upload_blob_to_storage(self, local_path: Path = None, remote_path: Path = None):
         """Uploads the file at local_path to blob to storage location remote_path,
@@ -402,3 +405,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
                 "objects because bucket name contains a wildcard, which is not "
                 "supported."
             )
+
+    # The following method is only required if the class inherits from
+    # StorageObjectTouch
+    # @retry_decorator
+    def touch(self):
+        ...

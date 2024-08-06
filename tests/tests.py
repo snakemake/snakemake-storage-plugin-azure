@@ -21,6 +21,7 @@ class TestStorageNoSettings(TestStorageBase):
     store_only = False
     delete = True
     files_only = False
+    touch = True
 
     def get_query_not_existing(self, tmp_path) -> str:
         container = uuid.uuid4().hex
