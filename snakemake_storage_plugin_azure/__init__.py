@@ -398,10 +398,9 @@ class StorageObject(
         # The method has to return concretized queries without any remaining wildcards.
         constant_prefix = get_constant_prefix(self.query)
         parsed = urlparse(constant_prefix)
-        prefix = parsed.path.lstrip("/")
+        prefix = f"{parsed.netloc}{parsed.path}"
         if prefix.startswith(self.container_name):
-            prefix = prefix[len(self.container_name) :]
-            return [item.name for item in self.get_prefix_blobs(prefix=prefix)]
+            return [f"az://{parsed.netloc}/{item.name}" for item in self.get_prefix_blobs(prefix=parsed.path)]
         else:
             raise WorkflowError(
                 f"storage object {self.query} cannot be used to list matching "
