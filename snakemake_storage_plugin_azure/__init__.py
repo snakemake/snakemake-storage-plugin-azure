@@ -396,7 +396,9 @@ class StorageObject(
         """Return a list of candidate matches in the storage for the query."""
         # This is used by glob_wildcards() to find matches for wildcards in the query.
         # The method has to return concretized queries without any remaining wildcards.
-        prefix = get_constant_prefix(self.query)[5:]
+        constant_prefix = get_constant_prefix(self.query)
+        parsed = urlparse(constant_prefix)
+        prefix = parsed.path.lstrip("/")
         if prefix.startswith(self.container_name):
             prefix = prefix[len(self.container_name) :]
             return [item.name for item in self.get_prefix_blobs(prefix=prefix)]
