@@ -400,7 +400,10 @@ class StorageObject(
         parsed = urlparse(constant_prefix)
         prefix = f"{parsed.netloc}{parsed.path}"
         if prefix.startswith(self.container_name):
-            return [f"az://{parsed.netloc}/{item.name}" for item in self.get_prefix_blobs(prefix=parsed.path)]
+            return [
+                f"az://{parsed.netloc}/{item.name}"
+                for item in self.get_prefix_blobs(prefix=parsed.path)
+            ]
         else:
             raise WorkflowError(
                 f"storage object {self.query} cannot be used to list matching "
@@ -411,5 +414,4 @@ class StorageObject(
     # The following method is only required if the class inherits from
     # StorageObjectTouch
     # @retry_decorator
-    def touch(self):
-        ...
+    def touch(self): ...
