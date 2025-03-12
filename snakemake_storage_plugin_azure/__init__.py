@@ -259,9 +259,10 @@ class StorageObject(
             self._is_dir = any(self.get_prefix_blobs())
         return self._is_dir
 
-    def get_prefix_blobs(self) -> Iterable[BlobProperties]:
+    def get_prefix_blobs(self, prefix=None) -> Iterable[BlobProperties]:
         """Return an iterator of objects in the storage that match the query prefix."""
-        prefix = self.blob_path + "/"
+        if prefix is None:
+            prefix = self.blob_path + "/"
         return (
             item
             for item in self.container_client().list_blobs(name_starts_with=prefix)
@@ -395,13 +396,17 @@ class StorageObject(
         """Return a list of candidate matches in the storage for the query."""
         # This is used by glob_wildcards() to find matches for wildcards in the query.
         # The method has to return concretized queries without any remaining wildcards.
-        prefix = get_constant_prefix(self.query)
+        constant_prefix = get_constant_prefix(self.query)
+        parsed = urlparse(constant_prefix)
+        prefix = f"{parsed.netloc}{parsed.path}"
         if prefix.startswith(self.container_name):
-            prefix = prefix[len(self.container_name) :]
-            return (item.key for item in self.get_prefix_blobs(prefix=prefix))
+            return [
+                f"az://{parsed.netloc}/{item.name}"
+                for item in self.get_prefix_blobs(prefix=parsed.path)
+            ]
         else:
             raise WorkflowError(
-                "storage object {self.query} cannot be used to list matching "
+                f"storage object {self.query} cannot be used to list matching "
                 "objects because bucket name contains a wildcard, which is not "
                 "supported."
             )
