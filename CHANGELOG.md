@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.4.2...v0.4.3) (2025-03-12)
+
+
+### Bug Fixes
+
+* wildcard search ([#31](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/31)) ([94e59d3](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/94e59d3049c68edc07a7f332a4c7fb67ffbeacab))
+
 ## [0.4.2](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.4.1...v0.4.2) (2024-08-06)
 
 
