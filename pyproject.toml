@@ -12,7 +12,7 @@ keywords = ["snakemake", "plugin", "storage", "azure"]
 [tool.poetry.dependencies]
 python = "^3.11"
 snakemake-interface-common = "^1.17.2"
-snakemake-interface-storage-plugins = "^3.2.3"
+snakemake-interface-storage-plugins = "^4.1.0"
 azure-storage-blob = "^12.20.0"
 azure-core = "^1.30.2"
 azure-identity = "^1.17.1"
@@ -22,7 +22,7 @@ black = "^23.10.1"
 flake8 = "^6.1.0"
 coverage = "^7.3.2"
 pytest = "^7.4.3"
-snakemake = {git="https://github.com/snakemake/snakemake.git"}
+snakemake = "^9.1.0"
 
 [build-system]
 requires = ["poetry-core"]
