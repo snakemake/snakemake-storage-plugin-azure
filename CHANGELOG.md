@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.4.3...v0.4.4) (2025-03-24)
+
+
+### Bug Fixes
+
+* adapt to storage plugin interface changes ([#33](https://github.com/snakemake/snakemake-storage-plugin-azure/issues/33)) ([ec45519](https://github.com/snakemake/snakemake-storage-plugin-azure/commit/ec45519991b8722e28d0025123362efd7ecc3d2a))
+
 ## [0.4.3](https://github.com/snakemake/snakemake-storage-plugin-azure/compare/v0.4.2...v0.4.3) (2025-03-12)
 
 
